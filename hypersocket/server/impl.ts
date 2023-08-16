@@ -21,8 +21,7 @@ export class HyperSocketServerImpl implements types.HyperSocketServer {
             this.__socketMap.delete(socket.id);
         });
         socket.addEventListener("message", ({ data }) => {
-            this.__onmessage.forEach(l => l({ id: socket.id, data }));
-            console.log("[INTERNAL]", data);
+            this.__onmessage.forEach(l => l({ id: socket.id, message: data }));
         });
         socket.addEventListener("open", () => {
             this.__onconnection.forEach(l => l({ id: socket.id }));
@@ -37,7 +36,7 @@ export class HyperSocketServerImpl implements types.HyperSocketServer {
     ///////////////////////////////////////////////////////////////////////////
     /////            HyperSocketServer interface implementation           /////
     ///////////////////////////////////////////////////////////////////////////
-    public addSocket(socket: WebSocket, id: types.SocketID): void {
+    addSocket(socket: WebSocket, id: types.SocketID): void {
         Object.defineProperty(socket, "id", {
             value: id,
             writable: false,
@@ -46,22 +45,26 @@ export class HyperSocketServerImpl implements types.HyperSocketServer {
         });
         this.addHyperSocket(socket as types.HyperWebSocket);
     }
-    public addHyperSocket(socket: types.HyperWebSocket): void {
+    addHyperSocket(socket: types.HyperWebSocket): void {
         if (this.__socketMap.has(socket.id)) {
             throw new Error("Socket ID already exists");
         }
-        this.__socketMap.set(socket.id, socket);
         this.__registerInernalListeners(socket);
+        this.__socketMap.set(socket.id, socket);
     }
-    public dispatchTo(id: types.SocketID, message: string): void {
+    dispatchTo(id: types.SocketID, message: string): void {
         const socket = this.__socketMap.get(id);
         if (!socket) return;
-        socket.send(message);
+        try {
+            socket.send(message);
+        } catch (e) {
+            console.error(e);
+        }
     }
-    public dispatchToAll(message: string): void {
+    dispatchToAll(message: string): void {
         this.getAllIDs().forEach(id => this.dispatchTo(id, message));
     }
-    public addEventListenerTo<
+    addEventListenerTo<
         K extends keyof WebSocketEventMap
     >(
         id: types.SocketID,
@@ -72,7 +75,7 @@ export class HyperSocketServerImpl implements types.HyperSocketServer {
         if (!socket) return;
         socket.addEventListener(type, listener, options);
     }
-    public addEventListenerToAll<
+    addEventListenerToAll<
         K extends keyof WebSocketEventMap
     >(
         type: K,
@@ -83,36 +86,33 @@ export class HyperSocketServerImpl implements types.HyperSocketServer {
             this.addEventListenerTo(id, type, listener, options)
         );
     }
-    public disconnect(id: types.SocketID): void {
+    disconnect(id: types.SocketID): void {
         const socket = this.__socketMap.get(id);
         if (!socket) return;
         socket.close();
+        this.__socketMap.delete(id);
     }
-    public disconnectAll(): void {
+    disconnectAll(): void {
         this.getAllIDs().forEach(id => this.disconnect(id));
     }
-    public on<
+    on<
         K extends keyof types.HyperSocketServerEvent
     >(
         type: K,
         listener: types.HyperSocketServerEventListener<K>
     ): void {
-        switch (type) {
-            case "connection":
-                this.__onconnection.add(listener as types.HyperSocketServerEventListener<"connection">);
-                break;
-            case "disconnection":
-                this.__ondisconnection.add(listener as types.HyperSocketServerEventListener<"disconnection">);
-                break;
-            case "message":
-                this.__onmessage.add(listener as types.HyperSocketServerEventListener<"message">);
-                break;
+        if (type === "connection") {
+            this.__onconnection.add(listener);
+        } else if (type === "disconnection") {
+            this.__ondisconnection.add(listener);
+        } else if (type === "message") {
+            this.__onmessage.add(listener);
         }
     }
-    public isIDAvailable(id: types.SocketID): boolean {
+    isIDAvailable(id: types.SocketID): boolean {
         return !this.__socketMap.has(id);
     }
-    public getAllIDs(): types.SocketID[] {
+    getAllIDs(): types.SocketID[] {
         return [...this.__socketMap.keys()];
     }
 }
