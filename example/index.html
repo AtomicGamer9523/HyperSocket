@@ -17,51 +17,6 @@
             <div id="conversation"></div>
         </div>
     </div>
-    <script>
-        const myUsername = prompt("Please enter your name");
-        const socket = hyperSocket(myUsername);
-
-        function addMessage(username, message) {
-            // displays new message
-            document.getElementById(
-                "conversation"
-            ).innerHTML += `<b> ${username} </b>: ${message} <br/>`;
-        }
-
-        socket.addEventListener("message", m => {
-            const data = JSON.parse(m.data);
-            const event = data["event"];
-            if (event === "send-message") {
-                addMessage(data.username, data.message);
-                return;
-            }
-            if (event === "update-users") {
-                let userListHtml = "";
-                for (const username of data.usernames) {
-                    userListHtml += `<div> ${username} </div>`;
-                }
-                document.getElementById("users").innerHTML = userListHtml;
-                return;
-            }
-        });
-
-        // on page load
-        window.onload = () => {
-            // when the client hits the ENTER key
-            document.getElementById("data").addEventListener("keypress", (e) => {
-                if (e.key === "Enter") {
-                    const inputElement = document.getElementById("data");
-                    var message = inputElement.value;
-                    inputElement.value = "";
-                    socket.send(
-                        JSON.stringify({
-                            event: "send-message",
-                            message: message,
-                        })
-                    );
-                }
-            });
-        };
-    </script>
+    <script src="./client.js"></script>
 </body>
 </html>

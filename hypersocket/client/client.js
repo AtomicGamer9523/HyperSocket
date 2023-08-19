@@ -1,3 +1,10 @@
+/**
+ * HyperSocket
+ * @license MIT
+ * @version 0.2.0
+ * @copyright Copyright (c) 2023 KConk Owners and Developers
+*/
+
 ((g,f)=>f((n,o)=>Object.defineProperty(g,n,{value:o})))(this,((export$)=>{'use strict';
     const getURL = () => {
         const url = new URL(window.location.href);

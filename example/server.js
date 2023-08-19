@@ -23,18 +23,17 @@ HSS.on("connection", updateUsers);
 HSS.on("disconnection", updateUsers);
 
 // broadcast new message if someone sent one
-HSS.on("message", ({ id, message }) => {
-    console.log(`Received message from ${id}: ${message}`);
-    message = JSON.parse(message);
-    const type = message["event"];
-    if (type === "send-message") {
-        const msg = JSON.stringify({
-            event: "send-message",
-            username: id,
-            message: message["message"] || "???",
-        });
-        HSS.dispatchToAll(msg);
-    }
+HSS.on("message", ({ id }) => {
+    console.log(`Received message from ${id}!`);
+});
+
+HSS.on("send-message", ({ id, data }) => {
+    const msg = JSON.stringify({
+        event: "send-message",
+        username: id,
+        message: data["message"] || "???",
+    });
+    HSS.dispatchToAll(msg);
 });
 
 app.use(router.routes());

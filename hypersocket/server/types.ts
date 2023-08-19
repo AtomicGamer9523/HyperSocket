@@ -1,6 +1,14 @@
+/**
+ * HyperSocket
+ * @license MIT
+ * @version 0.2.0
+ * @copyright Copyright (c) 2023 KConk Owners and Developers
+*/
+
 /** A type for a socket id */
 export type SocketID = string;
 
+/** A type for a return value of a function, which can be a promise or not */
 export type Ret<T> = T | Promise<T>;
 
 /** A Base for all HyperSocketServer events */
@@ -34,6 +42,15 @@ export interface HyperSocketServerEvent {
 export interface HyperWebSocket extends WebSocket {
     /** The id of the socket */
     readonly id: SocketID;
+
+    /**
+     * Adds an event listener to the socket. The listener will be called when the event is triggered
+     * @param {string} event event to listen to
+     * @param {HyperSocketServerClientEventListener<T>} listener listener to add
+     * @returns {void} void
+     * @template T
+    */
+    on<T>(event: string, listener: HyperSocketServerClientEventListener<T>): void;
 }
 
 /** A HyperWebSocket event */
@@ -44,7 +61,10 @@ export type HyperWebSocketEventListener<
 /** A HyperSocketServer event */
 export type HyperSocketServerEventListener<
     K extends keyof HyperSocketServerEvent
-> = (this: HyperSocketServer, ev: HyperSocketServerEvent[K]) => Ret<void>;
+    > = (this: HyperSocketServer, ev: HyperSocketServerEvent[K]) => Ret<void>;
+
+/** A HyperSocketServer event listener */
+export type HyperSocketServerClientEventListener<T> = (this: HyperWebSocket, data: T) => Ret<void>;
 
 /** A HyperSocketServer */
 export interface HyperSocketServer {
@@ -53,15 +73,16 @@ export interface HyperSocketServer {
      * @param {WebSocket} socket socket to add
      * @param {SocketID} id id of the socket
      * @returns {void} void
+     * @throws {Error} if the socket id is already taken
     */
     addSocket(socket: WebSocket, id: SocketID): void;
     /**
-     * Adds a hyper socket to the server
+     * Adds a socket to the server
      * @param {HyperWebSocket} socket socket to add
      * @returns {void} void
      * @throws {Error} if the socket id is already taken
     */
-    addHyperSocket(socket: HyperWebSocket): void;
+    addSocket(socket: HyperWebSocket): void;
     /**
      * Dispatches an event to a certain socket
      * @param {SocketID} id id of the socket
@@ -84,10 +105,7 @@ export interface HyperSocketServer {
      * @returns {void} void
      * @template K
     */
-    addEventListenerTo<
-        // 'open' | 'close' | 'error' | 'message'
-        K extends keyof WebSocketEventMap
-    >(
+    addEventListenerTo<K extends keyof WebSocketEventMap>(
         id: SocketID,
         type: K,
         listener: HyperWebSocketEventListener<K>,
@@ -101,10 +119,7 @@ export interface HyperSocketServer {
      * @returns {void} void
      * @template K
     */
-    addEventListenerToAll<
-        // 'open' | 'close' | 'error' | 'message'
-        K extends keyof WebSocketEventMap
-    >(
+    addEventListenerToAll<K extends keyof WebSocketEventMap>(
         type: K,
         listener: HyperWebSocketEventListener<K>,
         options?: boolean | AddEventListenerOptions,
@@ -127,12 +142,20 @@ export interface HyperSocketServer {
      * @returns {void} void
      * @template K
     */
-    on<
-        // 'connection' | 'disconnection' | 'message'
-        K extends keyof HyperSocketServerEvent
-    >(
+    on<K extends keyof HyperSocketServerEvent>(
         type: K,
         listener: HyperSocketServerEventListener<K>
+    ): void;
+    /**
+     * Adds an event listener to the event that the client emits
+     * @param {string} eventID id of the event
+     * @param {HyperSocketServerClientEventListener<T>} listener listener to add
+     * @returns {void} void
+     * @template T
+    */
+    on<T>(
+        event: string,
+        listener: HyperSocketServerClientEventListener<T>
     ): void;
     /**
      * Checks if a certain socket id is available
@@ -145,4 +168,16 @@ export interface HyperSocketServer {
      * @returns {SocketID[]} all socket ids
     */
     getAllIDs(): SocketID[];
+    /**
+     * Gets all sockets
+     * @returns {HyperWebSocket[]} all sockets
+    */
+    getAllSockets(): HyperWebSocket[];
+    /**
+     * Gets a certain socket
+     * @param {SocketID} id id of the socket
+     * @returns {HyperWebSocket} the socket 
+     * @throws {Error} if the socket id is not available
+    */
+    getSocket(id: SocketID): HyperWebSocket;
 }
