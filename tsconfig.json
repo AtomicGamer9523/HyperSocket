@@ -1,6 +1,11 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "target": "ESNext"
+    "target": "ESNext",
+    "strict": true,
+    "types": [
+      "./lib.deno.d.ts",
+      "./lib.deno.unstable.d.ts"
+    ]
   }
 }

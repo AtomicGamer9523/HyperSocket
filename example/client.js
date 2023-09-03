@@ -3,7 +3,7 @@ const socket = hyperSocket(myUsername);
 
 function sendMessage() {
     const inputElement = document.getElementById("data");
-    let message = inputElement.value;
+    const message = inputElement.value;
     inputElement.value = "";
     socket.emit("send-message", message);
 }
@@ -14,15 +14,13 @@ function addMessage(username, message) {
     list.innerHTML += `<b> ${username} </b>: ${message} <br/>`;
 }
 
-socket.on("message", (message) => {
-    console.log("Received message: " + message);
-});
-
-socket.onEvent("send-message", (data) => {
+// listen for new messages
+socket.on("send-message", (data) => {
     addMessage(data.username, data.message);
 });
 
-socket.onEvent("update-users", (data) => {
+// listen for new users
+socket.on("update-users", (data) => {
     let userListHtml = "";
     for (const username of data.usernames) {
         userListHtml += `<div> ${username} </div>`;

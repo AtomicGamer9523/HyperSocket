@@ -1,135 +1,122 @@
-/**
- * HyperSocket
- * @license MIT
- * @version 0.2.0
- * @copyright Copyright (c) 2023 KConk Owners and Developers
-*/
+﻿﻿//////////////////////////////////////////////////////////////////////
+/////               Author: Матвей Т <matveit.dev>               /////
+/////                        License: MIT                        /////
+/////           Not removing this header is appreciated          /////
+//////////////////////////////////////////////////////////////////////
 
-import * as types from "./types";
+import {
+    HyperSocketServerEvent,
+    HyperSocketServer,
+    HyperWebSocket,
+    EventHandler,
+    SocketID
+} from "./mod.ts";
 
-class HyperSocketServerInternalImpl {
-
-    constructor() {
-
+export class HyperSocketServerImpl implements HyperSocketServer {
+    readonly #socketHandlers: Map<string, EventHandler[]>;
+    readonly #serverHandlers: {
+        disconnection: EventHandler[];
+        connection: EventHandler[];
+        message: EventHandler[];
+        error: EventHandler[];
+    };
+    readonly #sockets: Map<SocketID, HyperWebSocket>;
+    public constructor() {
+        this.#serverHandlers = {
+            disconnection: [],
+            connection: [],
+            message: [],
+            error: []
+        };
+        this.#socketHandlers = new Map();
+        this.#sockets = new Map();
     }
-    addSocket(socket: types.HyperWebSocket): void {
-
+    private setupSocket(socket: HyperWebSocket): void {
+        if (!this.isIDAvailable(socket.id)) {
+            throw new Error(`ID: ${socket.id} is already taken`);
+        }
+        socket.addEventListener("message", (e: MessageEvent) => {
+            this.#serverHandlers.message.forEach(f => f(e.data));
+            const obj = JSON.parse(e.data);
+            const event = obj.event;
+            const data = obj.data;
+            const id = obj.id;
+            if (this.#socketHandlers.has(event)) {
+                for (const handler of
+                    this.#socketHandlers.get(event)!
+                ) handler({ data, id });
+            }
+        });
+        socket.addEventListener("close", () => {
+            this.#sockets.delete(socket.id);
+            this.#serverHandlers.disconnection.forEach(f => f());
+        });
+        socket.addEventListener("error", (e: Event) => {
+            this.#serverHandlers.error.forEach(f => f(e));
+        });
+        socket.addEventListener("open", () => {
+            this.#sockets.set(socket.id, socket);
+            this.#serverHandlers.connection.forEach(f => f());
+        });
     }
-    allIDs(): types.SocketID[] {
-        return [];
-    }
-    addEventHandler<K extends keyof types.HyperSocketServerEvent>(
-        event: K,
-        handler: types.HyperSocketServerEventHandler<K>
-    ): void {
-
-    }
-    addMessageHandler<T>(
-        event: string,
-        handler: types.HyperSocketServerMessageHandler<T>
-    ): void {
-
-    }
-
-}
-
-/**
- * Generates a type from any object
- * usefull for runtime type checking
-*/
-const g$: <T>(obj?: any) => T = <T>(obj?: any): T => obj as T;
-
-export class HyperSocketServerImpl implements types.HyperSocketServer {
-    private __internal: HyperSocketServerInternalImpl;
-    constructor() {
-        this.__internal = new HyperSocketServerInternalImpl();
-    }
-    ///////////////////////////////////////////////////////////////////////////
-    /////            HyperSocketServer interface implementation           /////
-    ///////////////////////////////////////////////////////////////////////////
-    dispatchTo(id: types.SocketID, message: string): void {
-        this.__internal.dispatchTo(id, message);
-    }
-    dispatchToAll(message: string): void {
-        this.getAllIDs().forEach(id => this.dispatchTo(id, message));
-    }
-    addEventListenerTo<K extends keyof WebSocketEventMap>(
-        id: types.SocketID,
-        type: K,
-        listener: types.HyperWebSocketEventListener<K>,
-        options?: boolean | AddEventListenerOptions,
-    ): void {
-        try {
-            this.getSocket(id).addEventListener(type, listener, options);
-        } finally { }
-    }
-    addEventListenerToAll<K extends keyof WebSocketEventMap>(
-        type: K,
-        listener: types.HyperWebSocketEventListener<K>,
-        options?: boolean | AddEventListenerOptions,
-    ): void {
-        this.getAllIDs().forEach(id =>
-            this.addEventListenerTo(id, type, listener, options)
-        );
-    }
-    disconnect(id: types.SocketID): void {
-        this.__internal.disconnect(id);
-    }
-    disconnectAll(): void {
+    public disconnectAll(): void {
         this.getAllIDs().forEach(id => this.disconnect(id));
     }
-    on<T, K extends keyof types.HyperSocketServerEvent>(
-        event:    string |
-                  K,
-        listener: types.HyperSocketServerClientEventListener<T> |
-                  types.HyperSocketServerEventListener<K>
-    ): void {
-        const __K = g$<K>();
-        const __T = g$<T>();
-        const __HyperSocketServerClientEventListener: types.HyperSocketServerClientEventListener<T> = undefined as types.HyperSocketServerClientEventListener<T>;
-        if (typeof event === "string") {
-            this.__internal.addMessageHandler(
-                event, listener as types.HyperSocketServerClientEventListener<T>
-            );
-        } else 
-            this.__internal.addEventHandler(event, listener as types.HyperSocketServerEventListener<K>);
+    public emit(event: string, data: object): void {
+        this.getAllIDs().forEach(id => this.emitTo(id, event, data));
+    }
+    public addSocket(s: WebSocket | HyperWebSocket, id?: SocketID): void {
+        if (!(s as any)["id"]) {
+            Object.defineProperty(s, "id", {
+                value: id,
+                writable: false,
+                enumerable: true,
+                configurable: false
+            });
+        }
+        this.setupSocket(s as HyperWebSocket);
+    }
+    public emitTo(id: SocketID, event: string, data: object): void {
+        const socket = this.#sockets.get(id);
+        if (!socket)
+            throw new Error(`Socket with id: ${id} not found`);
+        socket.send(JSON.stringify({
+            event,
+            data
+        }));
+    }
+    public disconnect(id: SocketID): void {
+        const socket = this.#sockets.get(id);
+        if (socket) {
+            this.#sockets.delete(id);
+            socket.close();
         }
     }
-
-    /**
-     * Checks if a certain socket id is available
-     * @param {SocketID} id id of the socket
-     * @returns {boolean} true if the socket id is available, false otherwise
-    */
-    isIDAvailable(id: SocketID): boolean;
-    /**
-     * Gets all socket ids
-     * @returns {SocketID[]} all socket ids
-    */
-    getAllIDs(): SocketID[];
-    /**
-     * Gets all sockets
-     * @returns {HyperWebSocket[]} all sockets
-    */
-    getAllSockets(): HyperWebSocket[];
-    /**
-     * Gets a certain socket
-     * @param {SocketID} id id of the socket
-     * @returns {HyperWebSocket} the socket 
-     * @throws {Error} if the socket id is not available
-    */
-    getSocket(id: SocketID): HyperWebSocket;
-
-    addSocket(
-        socket: WebSocket | types.HyperWebSocket,
-        id?: types.SocketID
-    ): void {
-        if (typeof socket["id"] !== "undefined") {
-            this.__internal.addSocket(socket as types.HyperWebSocket);
-            return;
+    public on(event: string, handler: EventHandler): void {
+        const handlers = this.#socketHandlers.get(event) || [];
+        handlers.push(handler);
+        this.#socketHandlers.set(event, handlers);
+    }
+    public onEvent(event: HyperSocketServerEvent, handler: EventHandler): void {
+        if (event === "connection") {
+            this.#serverHandlers.connection.push(handler);
+        } else if (event === "disconnection") {
+            this.#serverHandlers.disconnection.push(handler);
+        } else if (event === "message") {
+            this.#serverHandlers.message.push(handler);
+        } else if (event === "error") {
+            this.#serverHandlers.error.push(handler);
+        } else {
+            throw new Error(`Unknown event: ${event}`);
         }
-        if (typeof id === "undefined") throw new TypeError("Socket id is not defined");
-        Object.defineProperty(socket, "id", { value: id });
-        this.__internal.addSocket(socket as types.HyperWebSocket);
+    }
+    public isIDAvailable(id: SocketID): boolean {
+        return !this.#sockets.has(id);
+    }
+    public getAllIDs(): SocketID[] {
+        return [...this.#sockets.keys()];
+    }
+    public getSocket(id: SocketID): HyperWebSocket | undefined {
+        return this.#sockets.get(id);
     }
 }

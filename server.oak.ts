@@ -1,16 +1,11 @@
-/**
- * HyperSocket
- * @license MIT
- * @version 0.2.0
- * @copyright Copyright (c) 2023 KConk Owners and Developers
-*/
+﻿﻿//////////////////////////////////////////////////////////////////////
+/////               Author: Матвей Т <matveit.dev>               /////
+/////                        License: MIT                        /////
+/////           Not removing this header is appreciated          /////
+//////////////////////////////////////////////////////////////////////
 
-//@ts-ignore
-import * as common from "./hypersocket/server/common.ts";
-//@ts-ignore
-import * as custom from "./server.custom.ts";
-//@ts-ignore
 import * as oak from "https://deno.land/x/oak/mod.ts";
+import * as custom from "./server.custom.ts";
 
 const clientCodePath = "./hypersocket/client/client.js";
 const CLIENT_CODE: string = Deno.readTextFileSync(new URL(clientCodePath, import.meta.url));
@@ -20,9 +15,11 @@ const CLIENT_CODE: string = Deno.readTextFileSync(new URL(clientCodePath, import
  * @param {oak.Router} router The oak router to use
  * @returns {HyperSocketServer} The HyperSocketServer instance
  */
-export function initHSS(router: oak.Router): common.HyperSocketServer {
+export function initHyperSocketServer(
+    router: oak.Router
+): custom.HyperSocketServer {
     const impl = custom.initCustomHSS();
-    router.get(common.WEBSOCKET_UPGRADE_PATH, async (ctx: oak.Context) => {
+    router.get(custom.WEBSOCKET_UPGRADE_PATH, async (ctx: oak.Context) => {
         let socket;
         try {
             socket = await ctx.upgrade();
@@ -38,13 +35,12 @@ export function initHSS(router: oak.Router): common.HyperSocketServer {
         }
         impl.addSocket(socket, id);
     });
-    router.get(common.CLIENT_CODE_PATH, (ctx: oak.Context) => {
+    router.get(custom.CLIENT_CODE_PATH, (ctx: oak.Context) => {
         ctx.response.body = CLIENT_CODE;
         ctx.response.type = "application/javascript";
     });
     return impl;
 }
 
-//@ts-ignore
-export * from "./hypersocket/server/common.ts";
-export default initHSS;
+export * from "./hypersocket/server/mod.ts";
+export default initHyperSocketServer;

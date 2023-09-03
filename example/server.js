@@ -9,31 +9,28 @@ const HSS = initHSS(router);
 
 // Broadcast the active users list to all connected sockets
 function updateUsers() {
-    const msg = JSON.stringify({
-        event: "update-users",
+    console.log("[updateUsers]", "Broadcasting active users list");
+    HSS.emit("update-users", {
         usernames: HSS.getAllIDs()
     });
-    HSS.dispatchToAll(msg);
 }
 
 // broadcast the active users list when a new user logs in
-HSS.on("connection", updateUsers);
+HSS.onEvent("connection", updateUsers);
 
 // broadcast the active users list when a user logs out
-HSS.on("disconnection", updateUsers);
+HSS.onEvent("disconnection", updateUsers);
 
 // broadcast new message if someone sent one
-HSS.on("message", ({ id }) => {
-    console.log(`Received message from ${id}!`);
+HSS.onEvent("message", (_rawData) => {
+    console.log("[onEvent]", "Received message from client!");
 });
 
 HSS.on("send-message", ({ id, data }) => {
-    const msg = JSON.stringify({
-        event: "send-message",
+    HSS.emit("send-message", {
         username: id,
-        message: data["message"] || "???",
+        message: data,
     });
-    HSS.dispatchToAll(msg);
 });
 
 app.use(router.routes());
