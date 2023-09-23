@@ -4,7 +4,7 @@
 /////           Not removing this header is appreciated          /////
 //////////////////////////////////////////////////////////////////////
 
-((g,f)=>f((n,o)=>Object.defineProperty(g,n,{value:o})))(this,((export$)=>{'use strict';
+(()=>{
     const getURL = () => {
         const url = new URL(window.location.href);
         const protocol = url.protocol === "https:" ? "wss" : "ws";
@@ -82,6 +82,16 @@
             };
         }
 
+        #waitForConnection = (callback) => {
+            setTimeout(() => {
+                if (this.#socket.readyState === 1) {
+                    if (callback) callback();
+                } else {
+                    this.#waitForConnection(callback);
+                }
+            }, 5);
+        }
+
         /**
          * @param {string | undefined} id
         */
@@ -118,16 +128,11 @@
                 id: this.#id,
                 data: data,
             });
-            this.#socket.send(msg);
+            this.#waitForConnection(() => this.#socket.send(msg));
         }
     }
 
-    /**
-     * Initialize a HyperSocket client
-     * @param {string | undefined} id
-    */
-    const hyperSocket = (id) => new HyperSocket(id);
-
-    export$("hyperSocket", hyperSocket);
-    export$("hs", hyperSocket);
-}));
+    Object.defineProperty(globalThis, "hs$", {
+        value: (id) => new HyperSocket(id)
+    });
+})();
