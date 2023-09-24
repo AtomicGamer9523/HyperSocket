@@ -1,4 +1,4 @@
-﻿﻿//////////////////////////////////////////////////////////////////////
+﻿//////////////////////////////////////////////////////////////////////
 /////               Author: Матвей Т <matveit.dev>               /////
 /////                        License: MIT                        /////
 /////           Not removing this header is appreciated          /////
@@ -29,13 +29,17 @@ export function initHyperSocketServer(
             return;
         }
         const id = ctx.request.url.searchParams.get("id");
+        if (id === null) {// if the id is not provided, close the socket
+            socket.close(1008, "ID not provided");
+            return;
+        }
         if (!impl.isIDAvailable(id)) {// if the username is already taken, close the socket
             socket.close(1008, `ID: ${id} is already taken`);
             return;
         }
         impl.addSocket(socket, id);
     });
-    router.get(custom.CLIENT_CODE_PATH, (ctx: oak.Context) => {
+    router.get(custom.CLIENT_CODE_PATH_CJS, (ctx: oak.Context) => {
         ctx.response.body = CLIENT_CODE;
         ctx.response.type = "application/javascript";
     });

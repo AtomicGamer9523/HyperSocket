@@ -11,4 +11,7 @@ export * from "./types.ts";
 export const WEBSOCKET_UPGRADE_PATH = "/__HyperSocket/upgrade" as const;
 
 /** Path to get the client code. Only GET requests should be handled. */
-export const CLIENT_CODE_PATH = "/__HyperSocket/client.js" as const;
+export const CLIENT_CODE_PATH_CJS = "/__HyperSocket/client.cjs" as const;
+
+/** Path to get the client code. Only GET requests should be handled. */
+export const CLIENT_CODE_PATH_ESM = "/__HyperSocket/client.mjs" as const;
