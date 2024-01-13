@@ -1,0 +1,31 @@
+[workspace]
+resolver = "2"
+members = [
+    "examples/rocket-chat"
+]
+
+[workspace.package]
+edition = "2021"
+version = "0.1.0"
+authors = [
+    "Матвей Т <https://matveit.dev> AtomicGamer9523@github"
+]
+
+[package]
+name = "hypersocket"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+path = "hypersocket/server/lib.rs"
+
+[dependencies.ws]
+package = "tokio-tungstenite"
+version = "0.21"
+
+[features]
+native-tls = ["ws/native-tls"]
+native-tls-vendored = ["ws/native-tls-vendored"]
+rustls-tls-native-roots = ["ws/rustls-tls-native-roots"]
+rustls-tls-webpki-roots = ["ws/rustls-tls-webpki-roots"]

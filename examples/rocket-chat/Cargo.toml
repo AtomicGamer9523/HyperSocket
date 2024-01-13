@@ -1,0 +1,18 @@
+[package]
+name = "rocket-chat-example"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "rocket-chat-example"
+path = "server.rs"
+
+[dependencies.hypersocket]
+path = "../.."
+
+[dependencies.rocket]
+version = "0.5"
+
+[dependencies]
+log = "0.4"

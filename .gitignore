@@ -1,3 +1,2 @@
-.vs
-tsconfig.json
-/*.d.ts
+/target
+/*.lock
