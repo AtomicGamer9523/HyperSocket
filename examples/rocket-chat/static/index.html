@@ -5,75 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HyperSocket Rocket Chat Example</title>
     <link rel="stylesheet" href="style.css" />
+    <script src="hypersocket.lib.js"></script>
 </head>
 <body>
-    <main>
+    <main id="main">
         <h1 align="center">HyperSocket Rocket Chat Example</h1>
-        <div id="users-list-div">
+        <div id="users-list-container">
             <h3 align="center"><u>Users</u></h3>
             <ul id="users-list">
-                <li>Mat</li>
+                <!--
+                    Examples: 
+                    <li><span class="user">Mat</span></li>
+                    <li><span class="user-self">Bob</span></li>
+                -->
             </ul>
+            <button id="logout-button" onclick="onLogout()">Logout</button>
         </div>
-        <div id="messages-div">
-            <div id="messages-list-div">
+        <div id="messages-container">
+            <div id="messages-list-container">
                 <ul id="messages-list">
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
-                    <li><b>Mat</b>: Hello</li>
+                    <!-- 
+                        Examples: 
+                        <div class="message"><span class="message-author">Mat</span><span class="message-seperator"></span><span class="message-content">Hello!</span></div>
+                        <div class="message"><span class="message-author">Bob</span><span class="message-seperator"></span><span class="message-content">hi!</span></div>
+                    -->
                 </ul>
             </div>
-            <div id="message-input-div">
-                <input type="text" id="message-input" placeholder="Type a message..." />
-                <button id="send-button">Send</button>
+            <div id="message-input-container">
+                <input type="text" id="message-input" placeholder="Type a message..." required />
+                <button id="send-button" type="submit" onclick="onSend()">Send</button>
             </div>
         </div>
     </main>
+    <div id="login-splash"></div>
+    <div id="login-container">
+        <h3 align="center"><u>Login</u></h3>
+        <form id="login-form" action="javascript:void(0)">
+            <input type="text" id="username-input" placeholder="Username" required/>
+            <input type="password" id="password-input" placeholder="Password" required/>
+            <button id="login-button" type="submit" onclick="onLogin()">Login</button>
+        </form>
+    </div>
+    <script src="client.js"></script>
 </body>
 </html>

@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
+    "incremental": true,
+    "module": "CommonJS",
     "target": "ESNext",
     "declaration": true,
-    "strict": true,
-    "types": []
+    "emitDeclarationOnly": true,
+    "outDir": "./target/",
+    "tsBuildInfoFile": "./target/.tsbuildinfo"
   }
 }

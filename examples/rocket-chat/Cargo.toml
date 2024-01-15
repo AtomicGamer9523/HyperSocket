@@ -9,10 +9,21 @@ name = "rocket-chat-example"
 path = "server.rs"
 
 [dependencies.hypersocket]
-path = "../.."
+path = "../../impls/server/rust"
+features = [
+    # We are using the `rocket` framework in this example
+    "middleware-rocket"
+]
 
 [dependencies.rocket]
 version = "0.5"
+features = [
+    # Needed for private cookies
+    "secrets",
+    # Needed for JSON serialization
+    "json"
+]
 
 [dependencies]
+lazy_static = "1"
 log = "0.4"

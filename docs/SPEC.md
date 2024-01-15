@@ -1,0 +1,1 @@
+# The HyperSocket Protocol Specification

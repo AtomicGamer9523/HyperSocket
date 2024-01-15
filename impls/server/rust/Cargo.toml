@@ -1,0 +1,32 @@
+[package]
+name = "hypersocket"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+path = "hypersocket/server/lib.rs"
+
+# Core Dependencies
+[dependencies.ws]
+package = "tokio-tungstenite"
+version = "0.21"
+
+[dependencies.tokio]
+version = "1.35"
+features = ["rt"]
+
+# Optional Dependencies
+[dependencies.rocket]
+version = "0.5"
+optional = true
+
+[features]
+middleware-rocket = ["__middleware", "dep:rocket"]
+
+tls-native = ["ws/native-tls"]
+tls-native-vendored = ["ws/native-tls-vendored"]
+tls-rustls-native-roots = ["ws/rustls-tls-native-roots"]
+tls-rustls-webpki-roots = ["ws/rustls-tls-webpki-roots"]
+
+__middleware = []
