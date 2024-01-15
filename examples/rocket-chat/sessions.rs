@@ -3,8 +3,16 @@ use rocket::request::{self, FromRequest, Request};
 use rocket::http::{CookieJar, Status};
 use rocket::serde::json::Json;
 use rocket::serde::{Serialize, Deserialize};
+use crate::stupiddb::StupidDB;
 
-type Res<T = String> = (rocket::http::Status, (rocket::http::ContentType, T));
+pub type Res<T = String> = (rocket::http::Status, (rocket::http::ContentType, T));
+
+const USERS_DB_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/stupiddb/users.stupid.db"
+);
+
+const USERS_DB: StupidDB = StupidDB::new(USERS_DB_PATH);
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
@@ -35,9 +43,19 @@ pub async fn login(jar: &CookieJar<'_>, login: Json<Login<'_>>) -> Res {
     let username = login.username;
     let password = login.password;
 
-    let pswd = crate::stupiddb::StupidDB.get(username).await;
+    let pswd = USERS_DB.get(username).await;
 
-    if pswd.unwrap_or("".to_string()) != password {
+    if pswd.is_none() {
+        return (
+            Status::Unauthorized, (
+            rocket::http::ContentType::Text,
+            "Invalid username!".to_string()
+        ));
+    }
+
+    let pswd = pswd.unwrap();
+
+    if pswd != password {
         return (
             Status::Unauthorized, (
             rocket::http::ContentType::Text,

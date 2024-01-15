@@ -1,4 +1,5 @@
-// //deno-lint-ignore-file no-unused-vars
+/// <reference path="../../../impls/client/ts/lib.ts" />
+//deno-lint-ignore-file no-unused-vars
 
 const hs = hyperSocket("auto", {
     in: {

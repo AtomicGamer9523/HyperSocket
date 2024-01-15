@@ -12,7 +12,7 @@ path = "server.rs"
 path = "../../impls/server/rust"
 features = [
     # We are using the `rocket` framework in this example
-    "middleware-rocket"
+    "impl-rocket"
 ]
 
 [dependencies.rocket]

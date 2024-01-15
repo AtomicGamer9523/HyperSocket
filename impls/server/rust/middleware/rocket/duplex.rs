@@ -8,32 +8,6 @@ use rocket::futures::stream::{Stream, FusedStream};
 use super::frame::{Message, CloseFrame};
 use super::result::{Result, Error};
 
-/// A readable and writeable WebSocket [`Message`] `async` stream.
-///
-/// This struct implements [`Stream`] and [`Sink`], allowing for `async` reading
-/// and writing of [`Message`]s. The [`StreamExt`] and [`SinkExt`] traits can be
-/// imported to provide additional functionality for streams and sinks:
-///
-/// ```rust
-/// # use rocket::get;
-/// # use rocket_ws as ws;
-/// use rocket::futures::{SinkExt, StreamExt};
-///
-/// #[get("/echo/manual")]
-/// fn echo_manual<'r>(ws: ws::WebSocket) -> ws::Channel<'r> {
-///     ws.channel(move |mut stream| Box::pin(async move {
-///         while let Some(message) = stream.next().await {
-///             let _ = stream.send(message?).await;
-///         }
-///
-///         Ok(())
-///     }))
-/// }
-/// ```
-///
-/// [`StreamExt`]: rocket::futures::StreamExt
-/// [`SinkExt`]: rocket::futures::SinkExt
-
 pub struct DuplexStream(ws::WebSocketStream<IoStream>);
 
 impl DuplexStream {
@@ -45,7 +19,6 @@ impl DuplexStream {
         DuplexStream(inner.await)
     }
 
-    /// Close the stream now. This does not typically need to be called.
     pub async fn close(&mut self, msg: Option<CloseFrame<'_>>) -> Result<()> {
         self.0.close(msg).await
     }

@@ -1,128 +1,45 @@
-use std::cell::OnceCell;
-use std::sync::Mutex;
+#[cfg(feature = "impl-rocket")]
+#[path = "middleware/rocket/mod.rs"]
+mod __impl;
 
-#[cfg(feature = "__middleware")]
-pub mod middleware;
-mod inner;
+#[cfg(feature = "impl-rocket")]
+mod __wrapper {
+    use crate::__impl::*;
 
-use inner::HyperSocketInner;
+    pub struct HyperSocketServerInner {
 
-pub struct HyperSocket(OnceCell<Mutex<HyperSocketInner>>);
+    }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Error {
-    /// The HyperSocket is not initialized.
-    NotInitialized,
-    /// The HyperSocket is already initialized.
-    AlreadyInitialized,
-    /// The HyperSocket internal mutex is poisoned.
-    MutexPoisoned,
-}
+    impl HyperSocketServerInner {
+        pub const fn new() -> Self {
+            Self {
 
-impl core::fmt::Display for Error {
-    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        match self {
-            Self::NotInitialized => write!(f, "The HyperSocket is not initialized."),
-            Self::AlreadyInitialized => write!(f, "The HyperSocket is already initialized."),
-            Self::MutexPoisoned => write!(f, "The HyperSocket internal mutex is poisoned."),
+            }
+        }
+        pub fn assign<'a>(&self, name: String, ws: HyperSocket) -> Channel<'a> {
+            use rocket::futures::*;
+
+            ws.channel(move |mut stream| Box::pin(async move {
+                while let Some(msg) = stream.next().await {
+                    println!("{}: {:?}", name, msg);
+                }
+                println!("{}: disconnected", name);
+                Ok(())
+            }))
         }
     }
 }
 
-impl std::error::Error for Error {}
+pub type HyperSocket = __impl::HyperSocket;
+pub type Channel<'a> = __impl::Channel<'a>;
 
-pub type Result<T = (), E = Error> = core::result::Result<T, E>;
+pub struct HyperSocketServer(__wrapper::HyperSocketServerInner);
 
-impl HyperSocket {
-    /// Create an uninitialized HyperSocket.
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// const HSS: HyperSocket = HyperSocket::uninit();
-    /// 
-    /// fn main() {
-    ///     HSS.init();
-    /// }
-    /// ```
-    pub const fn uninit() -> Self {
-        Self(OnceCell::new())
+impl HyperSocketServer {
+    pub const fn new() -> Self {
+        Self(__wrapper::HyperSocketServerInner::new())
     }
-    /// Initialize the HyperSocket.
-    /// 
-    /// If the HyperSocket is already initialized, this function does nothing.
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// const HSS: HyperSocket = HyperSocket::uninit();
-    /// 
-    /// fn main() {
-    ///     HSS.init();
-    /// }
-    /// ```
-    pub fn init(&self) {
-        self.0.get_or_init(|| Mutex::new(HyperSocketInner::new()));
-    }
-    /// Register a handler for an event.
-    /// 
-    /// If the HyperSocket is not initialized, this function initializes it.
-    /// This is the preferred way, however, if you do not want to this to
-    /// initialize the HyperSocket, use [`on_noinit`](#method.on_noinit).
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// const HSS: HyperSocket = HyperSocket::uninit();
-    /// 
-    /// fn main() {
-    ///     HSS.on("message", message_handler);
-    /// }
-    /// 
-    /// fn message_handler(msg: JsonValue) {
-    ///     println!("{}", msg);
-    /// }
-    /// ```
-    pub fn on<F>(&self, name: &'static str, handler: F) -> Result where
-        F: FnMut(json::Value) + 'static + Send + Sync,
-    {
-        self.init();
-        let inner = match self.0.get() {
-            Some(inner) => inner,
-            None => unreachable!("We just initialized it!"),
-        };
-        inner.lock().map_err(|_| Error::MutexPoisoned)?.on(name, handler)
-    }
-
-    /// Register a handler for an event.
-    /// 
-    /// If the HyperSocket is not initialized, this function does nothing.
-    /// 
-    /// # Example
-    /// 
-    /// ```rust
-    /// const HSS: HyperSocket = HyperSocket::uninit();
-    /// 
-    /// fn main() {
-    ///     HSS.on_noinit("message", message_handler1);
-    ///     HSS.init();
-    ///     HSS.on_noinit("message", message_handler2);
-    /// }
-    /// 
-    /// fn message_handler1(msg: JsonValue) {
-    ///     println!("1: {}", msg); // This will never be called.
-    /// }
-    /// 
-    /// fn message_handler2(msg: JsonValue) {
-    ///    println!("2: {}", msg);
-    /// }
-    /// ```
-    pub fn on_noinit<F>(&self, name: &'static str, handler: F) -> Result where
-        F: FnMut(json::Value) + 'static + Send + Sync,
-    {
-        if let Some(inner) = self.0.get() {
-            inner.lock().map_err(|_| Error::MutexPoisoned)?.on(name, handler)?;
-        }
-        Err(Error::NotInitialized)
+    pub fn assign<'a, T: ToString>(&self, name: T, ws: HyperSocket) -> Channel<'a> {
+        self.0.assign(name.to_string(), ws)
     }
 }

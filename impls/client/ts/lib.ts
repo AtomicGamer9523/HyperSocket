@@ -304,8 +304,8 @@ class HyperSocketImpl<
         if (this.connected || this.socket) return Promise.resolve();
         try {
             this.socket = new WebSocket(
-                `${this.server.secure ? "wss" : "ws"}://${this.server.host}:${this.server.port}${this.server.path}`,
-                'hypersocket'
+                this.server.secure ? "wss" : "ws" + "://" +
+                this.server.host + ":" + this.server.port + this.server.path
             );
         } catch (e) {
             return Promise.reject(e);
