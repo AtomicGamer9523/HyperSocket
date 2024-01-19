@@ -124,7 +124,7 @@ export type HyperSocketOutputEvents<K extends HyperSocketOutputKey> = Record<K, 
  * @template {IE extends HyperSocketInputEvents<IK>} IE The input events.
  * @template {OK extends HyperSocketOutputKey} OK The output keys.
  * @template {OE extends HyperSocketOutputEvents<OK>} OE The output events.
- * @interface
+ * @interface HyperSocket
 */
 export interface HyperSocket<
     IK extends HyperSocketInputKey,
