@@ -1,6 +1,3 @@
-#[macro_use] extern crate rocket;
-
-use rocket::fs::{FileServer, relative};
 use hypersocket::*;
 
 mod sessions;
@@ -19,8 +16,8 @@ async fn hypersocket_js() -> sessions::Res {
 }
 
 #[get("/?<name>")]
-fn wsroot<'a>(ws: HyperSocket, name: &str) -> Channel<'a> {
-    HSS.assign(name, ws)
+fn wsroot<'a>(ws: HyperSocket, name: Option<&str>) -> Channel<'a> {
+    HSS.assign(name.unwrap_or(""), ws)
 }
 
 #[launch]

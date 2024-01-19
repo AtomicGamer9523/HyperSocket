@@ -1,11 +1,4 @@
-use rocket::outcome::IntoOutcome;
-use rocket::request::{self, FromRequest, Request};
-use rocket::http::{CookieJar, Status};
-use rocket::serde::json::Json;
-use rocket::serde::{Serialize, Deserialize};
 use crate::stupiddb::StupidDB;
-
-pub type Res<T = String> = (rocket::http::Status, (rocket::http::ContentType, T));
 
 const USERS_DB_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -75,11 +68,18 @@ pub async fn logout(jar: &CookieJar<'_>) -> Res<&'static str> {
 }
 
 #[get("/loggincheck")]
-pub async fn am_i_logged_in(user: Option<User>) -> Res<&'static str> {
-    (Status::Ok, (rocket::http::ContentType::Text, match user {
-        Some(_) => "true",
-        None => "false"
-    }))
+pub async fn am_i_logged_in(user: Option<User>) -> Res {
+    (
+        match user {
+            Some(_) => Status::Ok,
+            None => Status::Unauthorized
+        }, (
+        rocket::http::ContentType::Text,
+        match user {
+            Some(u) => u.0,
+            None => "Not logged in!".to_string()
+        }
+    ))
 }
 
 pub fn routes() -> Vec<rocket::Route> {

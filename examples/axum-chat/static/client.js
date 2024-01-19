@@ -13,7 +13,7 @@ const hs = hyperSocket("auto", {
     out: {
         'message': 'string'
     }
-})
+});
 
 function showLoginPrompt() {
     document.getElementById('login-splash').style.display = 'block';
@@ -38,7 +38,9 @@ function addMessage(username, content) {
     document.getElementById('messages-list').appendChild(message);
 }
 
-async function main() {
+async function main(/**@type {string}*/ username) {
+    hs.server = {}
+
     await hs.connect();
 
     hs.on('message', (message) => {
@@ -119,11 +121,11 @@ async function onLogout() {
 
 async function init() {
     const res = await fetch('/loggincheck');
-    const text = await res.text();
-    if (text === "true") hideLoginPrompt();
+    const username = await res.text();
+    if (res.status == 200) hideLoginPrompt();
     else showLoginPrompt();
 
-    await main();
+    await main(username);
 }
 
 init();

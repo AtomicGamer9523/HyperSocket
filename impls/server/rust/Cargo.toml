@@ -20,8 +20,13 @@ version = "1.35"
 version = "0.5"
 optional = true
 
+[dependencies.axum]
+version = "0.7"
+optional = true
+
 [features]
 impl-rocket = ["dep:rocket"]
+impl-axum = ["dep:axum"]
 
 tls-native = ["ws/native-tls"]
 tls-native-vendored = ["ws/native-tls-vendored"]

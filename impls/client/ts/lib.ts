@@ -8,7 +8,7 @@ declare global {
      * @returns {HyperSocket<string, any, string, any>} The HyperSocket.
     */
     //deno-lint-ignore no-explicit-any
-    function hyperSocket(server: "auto"): HyperSocket<string, any, string, any>;
+    function hyperSocket<const S extends "auto" | string>(server: S): HyperSocket<string, any, string, any>;
     /**
      * Creates a new HyperSocket.
      * 
@@ -25,12 +25,13 @@ declare global {
      * @template {HyperSocketOutputEvents<OK>} OE The output events.
     */
     function hyperSocket<
+        const S extends "auto" | string,
         const IK extends HyperSocketInputKey,
         IE extends HyperSocketInputEvents<IK>,
         const OK extends HyperSocketOutputKey,
         OE extends HyperSocketOutputEvents<OK>
     >(
-        server: "auto",
+        server: S,
         scheme: HyperSocketInputOutputScheme<IK, IE, OK, OE>
     ): HyperSocket<IK, IE, OK, OE>;
     /**
@@ -63,18 +64,14 @@ declare global {
 }
 
 /** The connection details. */
-export interface HyperSocketServer {
-    /** Port */
+export interface HyperSocketServer extends HyperSocketServerLike {
     readonly port: number;
-    /** Host */
     readonly host: string;
-    /** Path */
     readonly path: string;
-    /** Wether or not it is secure */
     readonly secure: boolean;
 }
 /** Something that can be used to create a HyperSocketServer. */
-export type HyperSocketServerLike = "auto" | {
+export interface HyperSocketServerLike {
     /** Port (e.g. 80) */
     port?: number;
     /** Host (e.g. "localhost") */
@@ -83,7 +80,7 @@ export type HyperSocketServerLike = "auto" | {
     path?: string;
     /** Wether or not it is secure (if tls is used) */
     secure?: boolean;
-} | string;
+};
 
 /** The data that is sent over the socket. */
 export type HyperSocketEventData = 'string' | 'number' | 'boolean' | {
@@ -136,7 +133,8 @@ export interface HyperSocket<
     OE extends HyperSocketOutputEvents<OK>
 > {
     /** The server the socket is connected to. */
-    readonly server: HyperSocketServer;
+    get server(): HyperSocketServer;
+    set server(server: "auto" | string | HyperSocketServerLike);
     /**
      * Registers an event listener for the given event.
      * 
@@ -220,30 +218,18 @@ export interface HyperSocket<
 
 type MaybeAsyncFunc<T> = ((data: T) => void) | ((data: T) => Promise<void>);
 
-function parseServer(server: HyperSocketServerLike): HyperSocketServer {
-    if (server === "auto") {
-        const url = new URL(location.href);
-        return {
-            port: Number.parseInt(url.port),
-            host: url.hostname,
-            path: url.pathname,
-            secure: url.protocol.startsWith("https"),
-        }
-    } else if (typeof server === "string") {
-        const url = new URL(server);
-        return {
-            port: Number.parseInt(url.port),
-            host: url.hostname,
-            path: url.pathname,
-            secure: url.protocol.startsWith("https"),
-        }
+function parseServer(server: HyperSocketServerLike | string): HyperSocketServer {
+    let url: URL;
+    if (typeof server === "string" && server !== "auto") {
+        url = new URL(server);
     } else {
-        return {
-            port: server.port ?? 80,
-            host: server.host ?? "localhost",
-            path: server.path ?? "/",
-            secure: server.secure ?? false,
-        }
+        url = new URL(location.href);
+    }
+    return {
+        port: typeof server !== "string" ? server.port ?? Number.parseInt(url.port) : Number.parseInt(url.port),
+        host: typeof server !== "string" ? server.host ?? url.hostname : url.hostname,
+        path: typeof server !== "string" ? server.path ?? url.pathname : url.pathname,
+        secure: typeof server !== "string" ? server.secure ?? url.protocol.startsWith("https") : url.protocol.startsWith("https"),
     }
 }
 
@@ -253,17 +239,17 @@ class HyperSocketImpl<
     OK extends HyperSocketOutputKey,
     OE extends HyperSocketOutputEvents<OK>
 > implements HyperSocket<IK, IE, OK, OE> {
-    public readonly server: HyperSocketServer;
-    private readonly scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
-    private socket?: WebSocket;
-    private connected: boolean;
+    #server: HyperSocketServer;
+    #scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
+    #socket?: WebSocket;
+    #connected: boolean;
     public constructor(
-        server: HyperSocketServerLike,
+        server: HyperSocketServerLike | string,
         scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
     ) {
-        this.server = parseServer(server);
-        this.scheme = scheme;
-        this.connected = false;
+        this.#server = parseServer(server);
+        this.#scheme = scheme;
+        this.#connected = false;
     }
     #_makeEvent<K extends IK>(
         event: K, callback: MaybeAsyncFunc<IE[K]>
@@ -275,56 +261,62 @@ class HyperSocketImpl<
             if (!e) return;
             if (e !== event) return;
             const d = data.data;
-            if (this.scheme) {
+            if (this.#scheme) {
                 if (typeof d === "object") {
-                    if (!this.scheme.in[e]) return;
-                    for (const key in this.scheme.in[e]) {
-                        if (!this.scheme.in[e][key]) return;
-                        if (typeof this.scheme.in[e][key] !== typeof d[key]) return;
+                    if (!this.#scheme.in[e]) return;
+                    for (const key in this.#scheme.in[e]) {
+                        if (!this.#scheme.in[e][key]) return;
+                        if (typeof this.#scheme.in[e][key] !== typeof d[key]) return;
                     }
                 // deno-lint-ignore valid-typeof
-                } else if (this.scheme.in[e] !== typeof d) return;
+                } else if (this.#scheme.in[e] !== typeof d) return;
             }
             callback(d);
         }
     }
     public on<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): void {
-        if (!this.socket) throw new Error("Socket not connected");
-        this.socket.addEventListener('message', this.#_makeEvent(event, callback));
+        if (!this.#socket) throw new Error("Socket not connected");
+        this.#socket.addEventListener('message', this.#_makeEvent(event, callback));
     }
     public off<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): void {
-        if (!this.socket) throw new Error("Socket not connected");
-        this.socket.removeEventListener('message', this.#_makeEvent(event, callback));
+        if (!this.#socket) throw new Error("Socket not connected");
+        this.#socket.removeEventListener('message', this.#_makeEvent(event, callback));
     }
     public emit<K extends OK>(event: K, data: OE[K]): void {
-        if (!this.socket) throw new Error("Socket not connected");
-        this.socket.send(JSON.stringify({ event, data }));
+        if (!this.#socket) throw new Error("Socket not connected");
+        this.#socket.send(JSON.stringify({ event, data }));
     }
     public connect(): Promise<void> {
-        if (this.connected || this.socket) return Promise.resolve();
+        if (this.#connected || this.#socket) return Promise.resolve();
         try {
-            this.socket = new WebSocket(
-                this.server.secure ? "wss" : "ws" + "://" +
-                this.server.host + ":" + this.server.port + this.server.path
+            this.#socket = new WebSocket(
+                this.#server.secure ? "wss" : "ws" + "://" +
+                this.#server.host + ":" + this.#server.port + this.#server.path
             );
         } catch (e) {
             return Promise.reject(e);
         }
         return new Promise((resolve, reject) => {
-            this.socket!.onerror = reject;
-            this.socket!.onopen = () => {
-                this.connected = true;
+            this.#socket!.onerror = reject;
+            this.#socket!.onopen = () => {
+                this.#connected = true;
                 resolve();
             }
         });
     }
     public disconnect(): void {
-        if (!this.socket) return;
-        this.connected = false;
-        this.socket.close();
+        if (!this.#socket) return;
+        this.#connected = false;
+        this.#socket.close();
     }
     public isConnected(): boolean {
-        return this.connected;
+        return this.#connected;
+    }
+    public get server(): HyperSocketServer {
+        return this.#server;
+    }
+    public set server(server: "auto" | string | HyperSocketServerLike) {
+        this.#server = parseServer(server);
     }
 }
 

@@ -1,0 +1,27 @@
+[package]
+name = "axum-chat-example"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "axum-chat-example"
+path = "server.rs"
+
+[dependencies.hypersocket]
+path = "../../impls/server/rust"
+features = [
+    # We are using the `axum` framework in this example
+    "impl-axum"
+]
+
+[dependencies.axum]
+version = "0.7"
+
+[dependencies.tokio]
+version = "1.35"
+features = ["full"]
+
+[dependencies]
+lazy_static = "1"
+log = "0.4"
