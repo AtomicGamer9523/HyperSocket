@@ -8,7 +8,7 @@ declare global {
      * @returns {HyperSocket<string, any, string, any>} The HyperSocket.
     */
     //deno-lint-ignore no-explicit-any
-    function hyperSocket<const S extends "auto" | string>(server: S): HyperSocket<string, any, string, any>;
+    function hyperSocket<const S extends "auto">(server: S): HyperSocket<string, any, string, any>;
     /**
      * Creates a new HyperSocket.
      * 
@@ -25,7 +25,7 @@ declare global {
      * @template {HyperSocketOutputEvents<OK>} OE The output events.
     */
     function hyperSocket<
-        const S extends "auto" | string,
+        const S extends "auto",
         const IK extends HyperSocketInputKey,
         IE extends HyperSocketInputEvents<IK>,
         const OK extends HyperSocketOutputKey,
