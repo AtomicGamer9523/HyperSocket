@@ -1,0 +1,12 @@
+[package]
+name = "base"
+description = "Core of HyperSocket"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+serde = "1.0"

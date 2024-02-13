@@ -1,67 +1,20 @@
-declare global {
-    /**
-     * Creates a new HyperSocket.
-     * 
-     * It will automatically connect to the current page's host.
-     * 
-     * @param {"auto"} server Server to connect to.
-     * @returns {HyperSocket<string, any, string, any>} The HyperSocket.
-    */
-    //deno-lint-ignore no-explicit-any
-    function hyperSocket<const S extends "auto">(server: S): HyperSocket<string, any, string, any>;
-    /**
-     * Creates a new HyperSocket.
-     * 
-     * It will automatically connect to the current page's host.
-     * 
-     * You can specify a scheme to type check the events (at runtime).
-     * 
-     * @param {"auto"} server Server to connect to.
-     * @param {HyperSocketInputOutputScheme<IK, IE, OK, OE>} scheme The scheme to type check the events.
-     * @returns {HyperSocket<IK, IE, OK, OE>} The HyperSocket.
-     * @template {const IK extends HyperSocketInputKey} IK The input keys.
-     * @template {HyperSocketInputEvents<IK>} IE The input events.
-     * @template {const OK extends HyperSocketOutputKey} OK The output keys.
-     * @template {HyperSocketOutputEvents<OK>} OE The output events.
-    */
-    function hyperSocket<
-        const S extends "auto",
-        const IK extends HyperSocketInputKey,
-        IE extends HyperSocketInputEvents<IK>,
-        const OK extends HyperSocketOutputKey,
-        OE extends HyperSocketOutputEvents<OK>
-    >(
-        server: S,
-        scheme: HyperSocketInputOutputScheme<IK, IE, OK, OE>
-    ): HyperSocket<IK, IE, OK, OE>;
-    /**
-     * Creates a new HyperSocket.
-     * 
-     * You have to specify the server to connect to (if it fails to parse, it will throw an error).
-     * 
-     * Additionally, you can specify a scheme to type check the events (at runtime).
-     * 
-     * @param {S} server Server to connect to.
-     * @param {HyperSocketInputOutputScheme<IK, IE, OK, OE>} scheme The scheme to type check the events.
-     * @returns {HyperSocket<IK, IE, OK, OE>} The HyperSocket.
-     * @template {const S extends HyperSocketServerLike} S The server to connect to.
-     * @template {const IK extends HyperSocketInputKey} IK The input keys.
-     * @template {HyperSocketInputEvents<IK>} IE The input events.
-     * @template {const OK extends HyperSocketOutputKey} OK The output keys.
-     * @template {HyperSocketOutputEvents<OK>} OE The output events.
-     * @throws {TypeError} If the server parsing fails.
-    */
-    function hyperSocket<
-        const S extends HyperSocketServerLike,
-        const IK extends HyperSocketInputKey,
-        IE extends HyperSocketInputEvents<IK>,
-        const OK extends HyperSocketOutputKey,
-        OE extends HyperSocketOutputEvents<OK>
-    >(
-        server: S,
-        scheme: HyperSocketInputOutputScheme<IK, IE, OK, OE>
-    ): HyperSocket<IK, IE, OK, OE>;
+import { Result as _Result } from '../server/safety.ts';
+
+export namespace HyperSocketError {
+    export type  NotConnected = "not connected";
+    export const NotConnected: NotConnected = "not connected";
+    export type  ConnectionFailed = "connection failed";
+    export const ConnectionFailed: ConnectionFailed = "connection failed";
+    export type  ConnectionClosed = "connection closed";
+    export const ConnectionClosed: ConnectionClosed = "connection closed";
+    export type  ParseError = "parse error";
+    export const ParseError: ParseError = "parse error";
 }
+export type HyperSocketError = HyperSocketError.NotConnected |
+    HyperSocketError.ConnectionClosed | HyperSocketError.ConnectionFailed |
+    HyperSocketError.ParseError;
+
+export type Result<T = void, E = HyperSocketError> = _Result<T, E>;
 
 /** The connection details. */
 export interface HyperSocketServer extends HyperSocketServerLike {
@@ -83,9 +36,7 @@ export interface HyperSocketServerLike {
 };
 
 /** The data that is sent over the socket. */
-export type HyperSocketEventData = 'string' | 'number' | 'boolean' | {
-    [key: string]: HyperSocketEventData;
-};
+export interface HyperSocketEventData {};
 /** The scheme to type check the events. */
 export interface HyperSocketInputOutputScheme<
     IK extends HyperSocketInputKey,
@@ -146,7 +97,7 @@ export interface HyperSocket<
      * @throws {Error} If the socket is not connected.
      * @memberof HyperSocket
     */
-    on<K extends IK>(event: K, callback: (data: IE[K]) => void): void;
+    on<const K extends IK>(event: K, callback: (data: IE[K]) => void): Result;
     /**
      * Registers an async event listener for the given event.
      * 
@@ -159,7 +110,7 @@ export interface HyperSocket<
      * @throws {Error} If the socket is not connected.
      * @async
     */
-    on<K extends IK>(event: K, callback: (data: IE[K]) => Promise<void>): void;
+    on<const K extends IK>(event: K, callback: (data: IE[K]) => Promise<void>): Result;
     /**
      * Unregisters an event listener for the given event.
      * 
@@ -171,7 +122,7 @@ export interface HyperSocket<
      * @memberof HyperSocket
      * @throws {Error} If the socket is not connected.
     */
-    off<K extends IK>(event: K, callback: (data: IE[K]) => void): void;
+    off<K extends IK>(event: K, callback: (data: IE[K]) => void): Result;
     /**
      * Unregisters an async event listener for the given event.
      * 
@@ -184,7 +135,7 @@ export interface HyperSocket<
      * @throws {Error} If the socket is not connected.
      * @async
     */
-    off<K extends IK>(event: K, callback: (data: IE[K]) => Promise<void>): void;
+    off<K extends IK>(event: K, callback: (data: IE[K]) => Promise<void>): Result;
     /**
      * Emits an event to the server.
      * 
@@ -196,7 +147,7 @@ export interface HyperSocket<
      * @memberof HyperSocket
      * @throws {Error} If the socket is not connected.
     */
-    emit<K extends OK>(event: K, data: OE[K]): void;
+    emit<K extends OK>(event: K, data: OE[K]): Result;
     /**
      * Asynchronously connects to the server.
      * 
@@ -206,9 +157,9 @@ export interface HyperSocket<
      * @memberof HyperSocket
      * @async
     */
-    connect(): Promise<void>;
+    connect(): Promise<Result>;
     /** Disconnects from the server. */
-    disconnect(): void;
+    disconnect(): Result;
     /**
      * Checks wether or not the socket is connected.
      * @returns {boolean} true if the socket is connected, false otherwise.
@@ -240,15 +191,10 @@ class HyperSocketImpl<
     OE extends HyperSocketOutputEvents<OK>
 > implements HyperSocket<IK, IE, OK, OE> {
     #server: HyperSocketServer;
-    #scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
     #socket?: WebSocket;
     #connected: boolean;
-    public constructor(
-        server: HyperSocketServerLike | string,
-        scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
-    ) {
+    public constructor(server: HyperSocketServerLike | string) {
         this.#server = parseServer(server);
-        this.#scheme = scheme;
         this.#connected = false;
     }
     #_makeEvent<K extends IK>(
@@ -258,36 +204,41 @@ class HyperSocketImpl<
         return (msg) => {
             const data = JSON.parse(msg.data);
             const e = data.event as K;
-            if (!e) return;
-            if (e !== event) return;
-            const d = data.data;
-            if (this.#scheme) {
-                if (typeof d === "object") {
-                    if (!this.#scheme.in[e]) return;
-                    for (const key in this.#scheme.in[e]) {
-                        if (!this.#scheme.in[e][key]) return;
-                        if (typeof this.#scheme.in[e][key] !== typeof d[key]) return;
-                    }
-                // deno-lint-ignore valid-typeof
-                } else if (this.#scheme.in[e] !== typeof d) return;
-            }
-            callback(d);
+            if (!e || e !== event) return;
+            callback(data.data);
         }
     }
-    public on<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): void {
-        if (!this.#socket) throw new Error("Socket not connected");
-        this.#socket.addEventListener('message', this.#_makeEvent(event, callback));
+    public on<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): Result {
+        if (!this.#socket) return _Result.Err(HyperSocketError.NotConnected);
+        try {
+            this.#socket.addEventListener('message', this.#_makeEvent(event, callback));
+        } catch (e) {
+            return _Result.Err(HyperSocketError.ConnectionFailed);
+        }
+        return _Result.Ok(void 0);
     }
-    public off<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): void {
-        if (!this.#socket) throw new Error("Socket not connected");
-        this.#socket.removeEventListener('message', this.#_makeEvent(event, callback));
+    public off<K extends IK>(event: K, callback: MaybeAsyncFunc<IE[K]>): Result {
+        if (!this.#socket) return _Result.Err(HyperSocketError.NotConnected);
+        try {
+            this.#socket.removeEventListener('message', this.#_makeEvent(event, callback));
+        } catch (e) {
+            return _Result.Err(HyperSocketError.ConnectionFailed);
+        }
+        return _Result.Ok(void 0);
     }
-    public emit<K extends OK>(event: K, data: OE[K]): void {
-        if (!this.#socket) throw new Error("Socket not connected");
-        this.#socket.send(JSON.stringify({ event, data }));
+    public emit<K extends OK>(event: K, data: OE[K]): Result {
+        if (!this.#socket) return _Result.Err(HyperSocketError.NotConnected);
+        try {
+            this.#socket.send(JSON.stringify({ event, data }));
+        } catch (e) {
+            return _Result.Err(HyperSocketError.ConnectionFailed);
+        }
+        return _Result.Ok(void 0);
     }
-    public connect(): Promise<void> {
-        if (this.#connected || this.#socket) return Promise.resolve();
+    public connect(): Promise<Result> {
+        if (this.#connected || this.#socket) return Promise.resolve(
+            _Result.Err(HyperSocketError.NotConnected)
+        );
         try {
             this.#socket = new WebSocket(
                 this.#server.secure ? "wss" : "ws" + "://" +
@@ -300,14 +251,15 @@ class HyperSocketImpl<
             this.#socket!.onerror = reject;
             this.#socket!.onopen = () => {
                 this.#connected = true;
-                resolve();
+                resolve(_Result.Ok(void 0));
             }
         });
     }
-    public disconnect(): void {
-        if (!this.#socket) return;
+    public disconnect(): Result {
+        if (!this.#socket) return _Result.Err(HyperSocketError.NotConnected);
         this.#connected = false;
         this.#socket.close();
+        return _Result.Ok(void 0);
     }
     public isConnected(): boolean {
         return this.#connected;
@@ -320,19 +272,58 @@ class HyperSocketImpl<
     }
 }
 
-const hyperSocket = <
+/**
+ * Creates a new HyperSocket.
+ * 
+ * It will automatically connect to the current page's host.
+ * 
+ * You can specify a scheme to type check the events (at runtime).
+ * 
+ * @param {"auto"} server Server to connect to.
+ * @param {HyperSocketInputOutputScheme<IK, IE, OK, OE>} scheme The scheme to type check the events.
+ * @returns {HyperSocket<IK, IE, OK, OE>} The HyperSocket.
+ * @template {const IK extends HyperSocketInputKey} IK The input keys.
+ * @template {HyperSocketInputEvents<IK>} IE The input events.
+ * @template {const OK extends HyperSocketOutputKey} OK The output keys.
+ * @template {HyperSocketOutputEvents<OK>} OE The output events.
+*/
+export function hyperSocket<
+    const S extends "auto",
     const IK extends HyperSocketInputKey,
     IE extends HyperSocketInputEvents<IK>,
     const OK extends HyperSocketOutputKey,
     OE extends HyperSocketOutputEvents<OK>
->(
-    connection: HyperSocketServerLike,
-    scheme?: HyperSocketInputOutputScheme<IK, IE, OK, OE>
-): HyperSocket<IK, IE, OK, OE> => new HyperSocketImpl<IK, IE, OK, OE>(connection, scheme);
-
-Object.defineProperty(globalThis, "hyperSocket", {
-    value: hyperSocket,
-    writable: false,
-    enumerable: false,
-    configurable: false
-});
+>(server: S): HyperSocket<IK, IE, OK, OE>;
+/**
+ * Creates a new HyperSocket.
+ * 
+ * You have to specify the server to connect to (if it fails to parse, it will throw an error).
+ * 
+ * Additionally, you can specify a scheme to type check the events (at runtime).
+ * 
+ * @param {S} server Server to connect to.
+ * @param {HyperSocketInputOutputScheme<IK, IE, OK, OE>} scheme The scheme to type check the events.
+ * @returns {HyperSocket<IK, IE, OK, OE>} The HyperSocket.
+ * @template {const S extends HyperSocketServerLike} S The server to connect to.
+ * @template {const IK extends HyperSocketInputKey} IK The input keys.
+ * @template {HyperSocketInputEvents<IK>} IE The input events.
+ * @template {const OK extends HyperSocketOutputKey} OK The output keys.
+ * @template {HyperSocketOutputEvents<OK>} OE The output events.
+ * @throws {TypeError} If the server parsing fails.
+*/
+export function hyperSocket<
+    const S extends HyperSocketServerLike,
+    const IK extends HyperSocketInputKey,
+    IE extends HyperSocketInputEvents<IK>,
+    const OK extends HyperSocketOutputKey,
+    OE extends HyperSocketOutputEvents<OK>
+>(server: S): HyperSocket<IK, IE, OK, OE>;
+export function hyperSocket<
+    const C extends "auto" | HyperSocketServerLike,
+    const IK extends HyperSocketInputKey,
+    IE extends HyperSocketInputEvents<IK>,
+    const OK extends HyperSocketOutputKey,
+    OE extends HyperSocketOutputEvents<OK>
+>(connection: C): HyperSocket<IK, IE, OK, OE> {
+    return new HyperSocketImpl<IK, IE, OK, OE>(connection);
+}

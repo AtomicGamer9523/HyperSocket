@@ -1,5 +1,5 @@
 {
     "tasks": {
-        "tojs": "deno run -A ./impls/client/ts/tojs.js"
+        "tojs": "deno run -A ./client/tojs.js"
     }
 }

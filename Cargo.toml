@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    # Currently broken
-    # "examples/axum-chat",
-    "impls/server/rust"
+    "./server/base",
+    "./server/macros",
+    "."
 ]
 
 [workspace.package]
@@ -12,3 +12,25 @@ version = "0.1.0"
 authors = [
     "Матвей Т <https://matveit.dev> AtomicGamer9523@github"
 ]
+
+[package]
+name = "hypersocket"
+description = "Websockets, blazingly fast :)"
+edition.workspace = true
+version.workspace = true
+authors.workspace = true
+
+[lib]
+path = "server/lib.rs"
+
+[dependencies.base]
+path = "./server/base"
+
+[dependencies.macros]
+path = "./server/macros"
+optional = true
+
+[features]
+default = ["macros"]
+
+macros = ["dep:macros"]
