@@ -1,9 +1,11 @@
 [workspace]
 resolver = "2"
 members = [
-    "./server/base",
-    "./server/macros",
-    "."
+    "server/base",
+    "server/macros",
+    ".",
+
+    "examples/axum-chat"
 ]
 
 [workspace.package]
@@ -29,6 +31,10 @@ path = "./server/base"
 [dependencies.macros]
 path = "./server/macros"
 optional = true
+
+[dependencies.serde]
+features = ["derive"]
+version = "1.0"
 
 [features]
 default = ["macros"]
